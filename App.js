@@ -1,87 +1,118 @@
-import React from 'react';
-import { StyleSheet, Text, View, TextInput, TouchableOpacity } from 'react-native';
+import React, { useEffect} from 'react';
+import { View, Text, ActivityIndicator } from 'react-native';
+import { NavigationContainer } from '@react-navigation/native';
 
-export default class App extends React.Component {
-  state={
-    email:"",
-    password:""
-  }
-  render(){
-    return (
-      <View style={styles.container}>
-        <Text style={styles.logo}>OPUS</Text>
-        <View style={styles.inputView} >
-          <TextInput  
-            style={styles.inputText}
-            placeholder="Email..." 
-            placeholderTextColor="#003f5c"
-            onChangeText={text => this.setState({email:text})}/>
-        </View>
-        <View style={styles.inputView} >
-          <TextInput  
-            secureTextEntry
-            style={styles.inputText}
-            placeholder="Password..." 
-            placeholderTextColor="#003f5c"
-            onChangeText={text => this.setState({password:text})}/>
-        </View>
-        <TouchableOpacity>
-          <Text style={styles.forgot}>Forgot Password?</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.loginBtn}>
-          <Text style={styles.loginText}>LOGIN</Text>
-        </TouchableOpacity>
-        <TouchableOpacity>
-          <Text style={styles.loginText}>Signup</Text>
-        </TouchableOpacity>
+import { createDrawerNavigator } from '@react-navigation/drawer';
+import MainTabScreen from './screens/MainTabScreen';
 
+import { DrawerContent } from './screens/DrawerContent'; 
+
+import RootStackScreen from './screens/RootStackScreen';
+import SupportScreen from './screens/SupportScreen';
+import SettingsScreen from './screens/SettingsScreen';
+import BookmarkScreen from './screens/BookmarkScreen';
+
+import { AuthContext } from './components/context';
+const Drawer = createDrawerNavigator();
+
+const App = () => {
+  // const [isLoading, setIsLoading] = React.useState(true);
+  // const [userToken, setUserToken] = React.useState(null);
+
+  const initialLoginState = {
+    isLoading: true,
+    userName: null,
+    userToken: null,
+  };
+
+  const loginReducer = (prevState, action) => {
+    switch( action.type ) {
+      case 'RETRIEVE_TOKEN': 
+        return {
+          ...prevState,
+          userToken: action.token,
+          isLoading: false,
+        };
+      case 'LOGIN': 
+        return {
+          ...prevState,
+          userName: action.id,
+          userToken: action.token,
+          isLoading: false,
+        };
+      case 'LOGOUT': 
+        return {
+          ...prevState,
+          userName: null,
+          userToken: null,
+          isLoading: false,
+        };
+      case 'REGISTER': 
+        return {
+          ...prevState,
+          userName: action.id,
+          userToken: action.token,
+          isLoading: false,
+        };
+    }
+  };
+
+  const [loginState, dispatch] = React.useReducer(loginReducer, initialLoginState);
+
+  const authContext = React.useMemo(() => ({
+    signIn: (userName, password) => {
+      // setUserToken('fgkj');
+      // setIsLoading(false);
+      let userToken;
+      userName = null;
+      if( userName == 'user' && password == 'pass') {
+          userToken = 'abcde';
+      } 
+      dispatch({ type: 'LOGIN', id: userName, token: userToken});
+    },
+    signOut: () => {
+      // setUserToken(null);
+      // setIsLoading(false);
+      dispatch({ type: 'LOGIN'});
+    },
+    signUp: () => {
+      // setUserToken('fgkj');
+      // setIsLoading(false);
+    },
+  }), []);
   
+  useEffect(() => {
+    setTimeout(() => {
+      // setIsLoading(false);
+      dispatch({ type: 'RETRIEVE_TOKEN', token: 'abcdef'});
+    }, 1000);
+  }, []);
+
+  if( loginState.isLoading ) {
+    return(
+      <View style={{flex:1,justifyContent:'center',alignItems:'center'}}>
+        <ActivityIndicator size="large"/>
       </View>
     );
   }
+
+  return (
+    <AuthContext.Provider value={authContext}>
+    <NavigationContainer>
+      { loginState.userToken != null ? (
+      <Drawer.Navigator drawerContent={props => <DrawerContent { ... props} /> }>
+        <Drawer.Screen name="HomeDrawer" component={MainTabScreen} />
+        <Drawer.Screen name="SupportScreen" component={SupportScreen}/>
+        <Drawer.Screen name="SettingsScreen" component={SettingsScreen}/>
+        <Drawer.Screen name="BookmarkScreen" component={BookmarkScreen}/>
+      </Drawer.Navigator>
+      )
+      :
+      <RootStackScreen/>
+      }
+    </NavigationContainer>
+    </AuthContext.Provider>
+  );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#003f5c',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  logo:{
-    fontWeight:"bold",
-    fontSize:50,
-    color:"#fb5b5a",
-    marginBottom:40
-  },
-  inputView:{
-    width:"80%",
-    backgroundColor:"#465881",
-    borderRadius:25,
-    height:50,
-    marginBottom:20,
-    justifyContent:"center",
-    padding:20
-  },
-  inputText:{
-    height:50,
-    color:"white"
-  },
-  forgot:{
-    color:"white",
-    fontSize:11
-  },
-  loginBtn:{
-    width:"80%",
-    backgroundColor:"#fb5b5a",
-    borderRadius:25,
-    height:50,
-    alignItems:"center",
-    justifyContent:"center",
-    marginTop:40,
-    marginBottom:10
-  },
-  loginText:{
-    color:"white"
-  }
-});
+export default App; 
